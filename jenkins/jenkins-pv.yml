@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jenkins-pv
+  labels:
+    name: mynfs # name can be anything
+spec:
+  storageClassName: manual # same storage class as pvc
+  capacity:
+    storage: 500Mi
+  accessModes:
+    - ReadWriteMany
+  mountOptions:
+    - vers=4
+  nfs:
+    server: 192.168.115.121
+    path: "/jenkins" # path to directory
