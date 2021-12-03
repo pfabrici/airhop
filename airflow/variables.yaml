@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: airflow
+  name: airflow-variables
+data:
+  AIRFLOW_VAR_ETLTOOL_NAME: "pdi"
