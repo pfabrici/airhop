@@ -31,6 +31,9 @@ Ein kleines Shellscript hilft bei der Ausführung des Deployments :
 jenkins.sh [up|down|init]
 ```
 
+Mit ```kubectl cluster-info``` kann die IP des Kubernetes Clusters herausgefunden werden.
+Der NodePort des Services mit ``` kubectl get svc -n jenkins```
+
 # 
 
 # Links / Doku
@@ -40,4 +43,4 @@ https://www.youtube.com/watch?v=Zzwq9FmZdsU&t=2s
 https://airflow.apache.org/docs/helm-chart/stable/index.html
 https://kubernetes.io/de/docs/concepts/workloads/pods/
 
-
+https://opensource.com/article/20/5/helm-charts
