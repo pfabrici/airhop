@@ -13,8 +13,7 @@ def ping_ip():
         pingstatus = "Network Active."
     else:
         pingstatus = "Network Error."
-    print("\n *** Network status for IP Address=%s is : ***" % ip_address)
-    print(pingstatus)
+    print("\n *** Network status for IP Address=", ip_address, " is : ", pingstatus, " ***" )
 
     return pingstatus
 
