@@ -2,17 +2,18 @@ from datetime import datetime
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
+from pythonping import ping
 import os
 
 
 def ping_ip():
     ip_address = "192.168.115.16"  # My laptop IP
-    response = os.system("ping -c 1 " + ip_address)
+    response = ping(ip_address, count=1)
 
-    if response == 0:
-        pingstatus = "Network Active."
+    if response.success :
+        pingstatus = "Ok"
     else:
-        pingstatus = "Network Error."
+        pingstatus = response.error_message
     print("\n *** Network status for IP Address=", ip_address, " is : ", pingstatus, " ***" )
 
     return pingstatus
