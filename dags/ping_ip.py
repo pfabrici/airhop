@@ -18,7 +18,7 @@ def ping_ip():
 
     return pingstatus
 
-dag = DAG('hello_world', description='Hello World DAG',
+dag = DAG('ping_ip', description='Ping network IP',
           schedule_interval='0 12 * * *',
           start_date=datetime(2017, 3, 20), catchup=False)
 
