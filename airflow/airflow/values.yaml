@@ -1157,11 +1157,11 @@ elasticsearch:
   # Or an object representing the connection
   # Example:
   # connection:
-  #   user: ~
+  #   user: elastic
   #   pass: ~
-  #   host: ~
-  #   port: ~
-  connection: {}
+  #   host: elasticsearch-master
+  #   port: 9200
+  #   # connection: {}
 
 # All ports used by chart
 ports:
@@ -1339,7 +1339,7 @@ dags:
     # ssh examples ssh://git@github.com/apache/airflow.git
     # git@github.com:apache/airflow.git
     # https example: https://github.com/apache/airflow.git
-    repo: ssh://git@192.168.115.12:2233/peterf/kub4us.git
+    repo: ssh://git@192.168.115.16:22/peter.fabricius/kub4us.git
     branch: master
     rev: HEAD
     depth: 1
@@ -1399,7 +1399,7 @@ dags:
 logs:
   persistence:
     # Enable persistent volume for storing logs
-    enabled: false
+    enabled: true
     # Volume size for logs
     size: 100Gi
     # If using a custom storageClass, pass name here
