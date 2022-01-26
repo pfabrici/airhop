@@ -1,15 +1,24 @@
 # Airflow on local Kubernetes
 
-Installation einer Airflow Installation auf einem lokalen
-Kubernetes Cluster. Verwendung des Kubernetes Executors,
-d.h. die Tasks der DAGs werden auf short-lived Pods ausgeführt.
+In diesem Verzeichnis des Repos wird die Installation von Airflow in einem lokalen Kubernetes Cluster beschrieben. Die Konfiguration beinhaltet die Verwendung des KubernetesExecutors, d.h. die Airflow Worker werden jeweils in einem temporären POD ausgeführt.
 
-Die DAG Definitionen werden regelmäßig aus git in die Pods synchronisiert.
+Die DAG Definitionen werden aus git in die Pods per git-sync synchronisiert.
 
-Es wird ein custom Airflow Container verwendet, der es erlaubt eigene
-Provider / Module zu verwenden.
+Es wird ein custom Airflow Container verwendet. Damit ist es zum einen möglich, weitere Python Bibliotheken einzubinden. Zum anderen soll die Verwendung von Apache Hop auf den Worker Nodes getestet werden. 
 
-## Umgang mit dem Custom Containers 
+## Konfiguration und Installation von Airflow in Kubernetes
+Die Konfiguration von Airflow geschieht über eine ```values.yml``` Datei, die alle relevanten Umgebungsvariablen für Helm beinhaltet. Relevante Variablen sind :
+* logs->persistence->enabled = true
+* dags->persistence->enabled = true
+* git_sync ff.
+* images
+
+Installiert und gestartet wird mit :
+```
+helm upgrade --install airflow apache-airflow/airflow -n airflow -f values.yaml --debug
+```
+
+## Handling der Custom Containers 
 
 Die Definition des Custom Containers steckt im ```airflow``` Verzeichnis. Die Dateien 
 * Dockerfile ( Containerdefinition )
