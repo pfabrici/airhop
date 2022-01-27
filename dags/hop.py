@@ -28,5 +28,3 @@ t1 = BashOperator(
     bash_command='/opt/hop/hop-run.sh',
     dag=dag)
 
-
-
