@@ -5,11 +5,12 @@ from airflow.operators.python_operator import PythonOperator
 from datetime import datetime, timedelta
 
 import os
+import subprocess
 
 def run_hop():
     os.chdir("/opt/hop")
-    os.system("hop-run.sh")
-
+    result=subprocess.getoutput("hop-run.sh")
+    print(result)
 
 with DAG(dag_id='bash_dag', schedule_interval=None, start_date=datetime(2020, 1, 1), catchup=False) as dag:
     # Task 1
