@@ -9,7 +9,7 @@ import subprocess
 
 def run_hop():
     os.chdir("/opt/hop")
-    result=subprocess.getoutput("hop-run.sh")
+    result=subprocess.getoutput("/opt/hop/hop-run.sh")
     print(result)
 
 with DAG(dag_id='bash_dag', schedule_interval=None, start_date=datetime(2020, 1, 1), catchup=False) as dag:
