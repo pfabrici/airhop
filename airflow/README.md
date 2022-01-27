@@ -30,12 +30,12 @@ Die Konfiguration von Airflow geschieht über eine ```values.yml``` Datei, die a
 
 ### Handling der Custom Containers 
 
-Die Definition des Custom Containers steckt im ```airflow``` Verzeichnis. Die Dateien 
+Anstelle des Airflow Images vom docker Hub verwende ich ein selbst erstelltes. Damit soll es möglich sein, weitere Python Bibliotheken und andere ETL Komponenten in das Image zu integrieren und in den DAGs verfügbar zu machen. Die Definition des Custom Containers steckt im ```airflow``` Verzeichnis in Form einer Dockerfile Containerdefinition. Die Dateien 
 * Dockerfile ( Containerdefinition )
 * requirements.txt ( Python Abhängigkeiten )
-sind wichtig und müssen zunächst entsprechend angepasst werden.
-
-Wenn ein neuer Custom Container erzeugt werden soll, geschieht das erstmal lokal. Dann wir der Container wie folgt in den Minikube Cluster hochgeladen :
+* und das Verzeichnis resources
+sind dafür relevant und müssen zunächst entsprechend angepasst werden. Aus dem Dockerfile wird dann mit ```docker build -t airflow-custom:${TAG} .``` ein Image gebaut.
+Dann wir das Image wie folgt in den Minikube Cluster hochgeladen :
 ```
 cd airflow
 TAG="1.0.0"
@@ -47,13 +47,13 @@ minikube image load airflow-custom:${TAG}
 Wird das Tag oder die Airflow Version verändert, müssen zusätzlich in der values.xml Anpassungen bei den entsprechenden Parametern gemacht werden :
 ```
 defaultAirflowRepository: airflow-custom
-defaultAirflowTag: "1.0.0"
+defaultAirflowTag: "${TAG}"
 airflowVersion: "2.2.2"
 ```
 
 ### Airflow via Helm aktualisieren
 
-Installiert und gestartet wird dann mit :
+Installiert, Upgedated und ge-/restartet wird dann mit :
 ```
 helm upgrade --install airflow apache-airflow/airflow -n airflow -f values.yaml --debug
 ```

@@ -40,10 +40,10 @@ airflowHome: /opt/airflow
 defaultAirflowRepository: airflow-custom
 
 # Default airflow tag to deploy
-defaultAirflowTag: "1.0.0"
+defaultAirflowTag: "0.0.1"
 
 # Airflow version (Used to make some decisions based on Airflow Version being deployed)
-airflowVersion: "2.2.2"
+airflowVersion: "2.2.3"
 
 # Images
 images:
@@ -1347,7 +1347,7 @@ dags:
     maxFailures: 0
     # subpath within the repo where dags are located
     # should be "" if dags are at repo root
-    subPath: "dags"
+    subPath: "sources/dags"
     # if your repo needs a user name password
     # you can load them to a k8s secret like the one below
     #   ---
