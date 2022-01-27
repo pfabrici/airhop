@@ -6,6 +6,7 @@ Die DAG Definitionen werden aus git in die Pods per git-sync synchronisiert.
 
 Es wird ein custom Airflow Container verwendet. Damit ist es zum einen möglich, weitere Python Bibliotheken einzubinden. Zum anderen soll die Verwendung von Apache Hop auf den Worker Nodes getestet werden. 
 
+
 ## Konfiguration und Installation von Airflow in Kubernetes
 Die Konfiguration von Airflow geschieht über eine ```values.yml``` Datei, die alle relevanten Umgebungsvariablen für Helm beinhaltet. Relevante Variablen sind :
 * logs->persistence->enabled = true
@@ -13,7 +14,15 @@ Die Konfiguration von Airflow geschieht über eine ```values.yml``` Datei, die a
 * git_sync ff.
 * images
 
-Installiert und gestartet wird mit :
+Ich verwende eine custom configmap und ein eigenes Namespace fuer airflow. Wenn noch nicht vorhanden, muessen diese angelegt werden :
+
+```
+kubectl create namespace airflow
+kubectl create configmap airflow-variables -n airflow --from-file variables.yaml
+kubectl create secret generic airflow-ssh-git-secret --from-file=gitSshKey=airflow_dags_rsa -n airflow
+```
+
+Installiert und gestartet wird dann mit :
 ```
 helm upgrade --install airflow apache-airflow/airflow -n airflow -f values.yaml --debug
 ```
@@ -46,7 +55,15 @@ helm upgrade --install airflow apache-airflow/airflow -n airflow -f values.yaml 
 ```
 
 
+## Airflow WebUI
+
+```
+kubectl port-forward svc/airflow-webserver 8080:8080 --namespace airflow
+```
+
+
 ## Links
 
-https://airflow.apache.org/docs/helm-chart/stable/manage-dags-files.html
-https://www.youtube.com/watch?v=39k2Sz9jZ2c
+* https://airflow.apache.org/docs/helm-chart/stable/manage-dags-files.html
+* https://www.youtube.com/watch?v=39k2Sz9jZ2c
+* https://phoenixnap.com/kb/install-minikube-on-ubuntu
