@@ -34,6 +34,10 @@ RUN addgroup apache \
 
 COPY --chown=hop:apache ./resources/hop/ /opt/hop
 
-RUN chmod -R 775 ${DEPLOYMENT_PATH}/config
+RUN chmod -R 775 ${DEPLOYMENT_PATH}/config \
+    && mkdir ${DEPLOYMENT_PATH}/audit \
+    && chown hop:apache ${DEPLOYMENT_PATH}/audit \
+    && chmod -R 775 ${DEPLOYMENT_PATH}/audit
+
 
 
