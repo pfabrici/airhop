@@ -1,30 +1,10 @@
-"""
-Code that goes along with the Airflow tutorial located at:
-https://github.com/apache/incubator-airflow/blob/master/airflow/example_dags/tutorial.py
-"""
 from airflow import DAG
+from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.bash_operator import BashOperator
 from datetime import datetime, timedelta
-
-
-default_args = {
-    'owner': 'airflow',
-    'depends_on_past': False,
-    'start_date': datetime(2015, 6, 1),
-    'email': ['airflow@example.com'],
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'retries': 1,
-    'retry_delay': timedelta(minutes=5)
-}
-
-dag = DAG(
-    'tutorial', 
-    default_args=default_args, 
-    schedule_interval=timedelta(days=1))
-
-t1 = BashOperator(
-    task_id='tryhop',
-    bash_command='/opt/hop/hop-run.sh',
-    dag=dag)
-
+with DAG(dag_id='bash_dag', schedule_interval=None, start_date=datetime(2020, 1, 1), catchup=False) as dag:
+# Task 1
+dummy_task = DummyOperator(task_id='dummy_task')
+# Task 2
+bash_task = BashOperator(task_id='bash_task', bash_command="echo 'command executed from BashOperator'")
+dummy_task >> bash_task
