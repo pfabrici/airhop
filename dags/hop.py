@@ -8,4 +8,7 @@ with DAG(dag_id='bash_dag', schedule_interval=None, start_date=datetime(2020, 1,
     dummy_task = DummyOperator(task_id='dummy_task')
     # Task 2
     bash_task = BashOperator(task_id='bash_task', bash_command="echo 'command executed from BashOperator'")
+    # Task 3
+    hop_task = BashOperator(task_id='hop_task', bash_command="/opt/hop/hop-run.sh")
     dummy_task >> bash_task
+    bash_task >> hop_task
