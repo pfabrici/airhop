@@ -9,6 +9,7 @@ import subprocess
 
 def run_hop():
     os.chdir("/opt/hop")
+    result=subprocess.getoutput("chmod -R 775 /opt/airflow/dags/repo/sources/hop/metadata")
     result=subprocess.getoutput("/opt/hop/hop-run.sh -r local -f generated_rows.hpl")
     print(result)
 
