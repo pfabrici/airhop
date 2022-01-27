@@ -24,7 +24,7 @@ dag = DAG(
     schedule_interval=timedelta(days=1))
 
 t1 = BashOperator(
-    task_id='try hop',
+    task_id='tryhop',
     bash_command='/opt/hop/hop-run.sh',
     dag=dag)
 
