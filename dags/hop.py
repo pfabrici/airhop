@@ -18,5 +18,8 @@ with DAG(dag_id='bash_dag', schedule_interval=None, start_date=datetime(2020, 1,
     bash_task = BashOperator(task_id='bash_task', bash_command="echo 'command executed from BashOperator'")
     # Task 3
     hop_task = PythonOperator(task_id='hop_task', python_callable=run_hop, dag=dag)
+    # Task 4
+    sleep_task = BashOperator(task_id='sleep_task', bash_command="sleep 300")
     dummy_task >> bash_task
     bash_task >> hop_task
+    hop_task >> sleep_task
