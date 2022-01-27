@@ -8,11 +8,7 @@ Es wird ein custom Airflow Container verwendet. Damit ist es zum einen möglich,
 
 
 ## Konfiguration und Installation von Airflow in Kubernetes
-Die Konfiguration von Airflow geschieht über eine ```values.yml``` Datei, die alle relevanten Umgebungsvariablen für Helm beinhaltet. Relevante Variablen sind :
-* logs->persistence->enabled = true
-* dags->persistence->enabled = true
-* git_sync ff.
-* images
+### Vorbereitung auf dem Kubernetes Cluster 
 
 Ich verwende eine custom configmap und ein eigenes Namespace fuer airflow. Wenn noch nicht vorhanden, muessen diese angelegt werden :
 
@@ -22,12 +18,17 @@ kubectl create configmap airflow-variables -n airflow --from-file variables.yaml
 kubectl create secret generic airflow-ssh-git-secret --from-file=gitSshKey=airflow_dags_rsa -n airflow
 ```
 
-Installiert und gestartet wird dann mit :
-```
-helm upgrade --install airflow apache-airflow/airflow -n airflow -f values.yaml --debug
-```
+### Vorbereitungen Helm/Airflow Konfiguration
 
-## Handling der Custom Containers 
+Die Konfiguration von Airflow geschieht über eine ```values.yml``` Datei, die alle relevanten Umgebungsvariablen für Helm beinhaltet. Relevante Variablen sind :
+* logs->persistence->enabled = true
+* dags->persistence->enabled = true
+* git_sync ff.
+* images
+
+
+
+### Handling der Custom Containers 
 
 Die Definition des Custom Containers steckt im ```airflow``` Verzeichnis. Die Dateien 
 * Dockerfile ( Containerdefinition )
@@ -49,11 +50,13 @@ defaultAirflowRepository: airflow-custom
 defaultAirflowTag: "1.0.0"
 airflowVersion: "2.2.2"
 ```
-Abschliessend wird Airflow über helm neu gestartet :
+
+### Airflow via Helm aktualisieren
+
+Installiert und gestartet wird dann mit :
 ```
 helm upgrade --install airflow apache-airflow/airflow -n airflow -f values.yaml --debug
 ```
-
 
 ## Airflow WebUI
 
