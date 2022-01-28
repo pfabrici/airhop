@@ -14,10 +14,9 @@ def run_hop_orig():
 
 def run_hop():
     child = subprocess.Popen("/opt/hop/hop-run.sh -r local -f generated_rows.hpl", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    retValRunJobsSerialScript = 0
     for line in child.stdout.readlines():
         child.wait()
-        print line           
+        print(line)
     return(child.returncode)
 
 with DAG(dag_id='bash_dag', schedule_interval=None, start_date=datetime(2020, 1, 1), catchup=False) as dag:
