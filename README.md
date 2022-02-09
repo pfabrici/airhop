@@ -1,22 +1,47 @@
 # Apache Airflow und Apache Hop auf Kubernetes mit KubernetesExecutor
 
-Dieses Repo enthält eine Beispielkonfiguration für die kombinierte Installation von Apache Airflow und Apache Hop in einem Kubernetes Cluster. Für die Ausführung von DAGs wird der KubernetesExecutor verwendet, so dass bei jeder Ausführung ein temporärer POD angelegt wird. Die Installation ist so gestaltet, dass man aus einem DAG z.B. per PythonOperator eine HOP Pipeline oder Workflow ausführen kann. 
+Dieses Repo enthält eine Beispielkonfiguration für die Verwendung von Apache Airflow als Scheduler von Apache Hop in einem Kubernetes Cluster. Für die Ausführung der Hop-DAGs wird der KubernetesExecutor verwendet, so dass bei jeder Ausführung ein temporärer POD angelegt wird, der die Hop Workflows und Pipelines ausführt. 
+Die Apache Hop Installation wird in diesem Setup in den Airflow Worker Container integriert.
+Hop wird aus den DAGs über einen PythonOperator und einem Python SubProcess gestartet.
+Sowohl die Airflow DAG Scripts als auch die HOP Objekte werden beim Start eines PODs aus git per git-sync abgeholt.
 
-Als Basis für die Installation wird das offizielle Airflow Helmchart verwendet. Apache Hop wird als zip File von https://hop.apache.org heruntergeladen.
-
-Die DAG Definitionen und HOP Objekte werden aus git in die Pods per git-sync synchronisiert.
+Als Basis für dieses Setup wird das offizielle Airflow Helmchart verwendet. Für die Ergänzung des Airflow Worker Containers verwende ich das Apache Hop Package, welches über die Downloadseite herunterladbar ist.
 
 ## Vorbedingungen
-Es wird davon ausgegangen, dass ein kubernetes Cluster konfiguriert und per kubectl bedienbar ist. Wenn dieser nicht vorhanden ist, kann er z.B. mit minikube schnell aufgesetzt werden. Docker muss vorhanden sein, ebenso der Kubernetes Paketmanager helm. Um DAGs und Hop Objekte zur erzeugen ist git und python hilfreich.
+Dieses Setup ist auf einem Ubuntu 20.4 System entstanden.
 
-Diese Anleitung ist auf einem Ubuntu 20.4 System entstanden.
+Es wird davon ausgegangen, dass ein Kubernetes Cluster konfiguriert und von der Kommandozeile per kubectl bedienbar ist. Wenn dieser nicht vorhanden ist, kann er z.B. mit minikube schnell aufgesetzt werden. Docker muss vorhanden sein, ebenso der Kubernetes Paketmanager helm. Um DAGs und Hop Objekte zur erzeugen ist git und python hilfreich.
+
+* Installation von Docker : https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
+* Minikube : https://kubernetes.io/de/docs/tasks/tools/install-minikube/
+* Installation von Helm : https://helm.sh/docs/intro/install/
+* Installation von git, python : Paketmanager "sudo apt-get install git python3"
+
+Der für dieses Setup verwendete Linux Benutzer sollte in der docker gruppe enthalten sein :
+```
+sudo usermod -a -G docker <user>
+```
+
+Anschliessend wird das hier beschriebene Repository kub4us gecloned :
+```
+git clone git@sources.zeith.net:peter.fabricius/kub4us.git
+```
+Das Repository verfügt über zwei Unterverzeichniss : 
+* airflow enthält alle Scripte/Konfigurationen, die zur Installation der Software im Cluster notwendig sind sowie die Sourcen für den  
+* sources enthält Beispiel DAGs und Hop Sourcen, die später in den Worker gesynct werden
+
+Die weiteren Schritte finden im Verzeichnis ```airflow``` statt.
+```
+cd kub4us/airflow
+```
 
 ## Konfiguration und Installation von Airflow in Kubernetes
 ### Helm vorbereiten
-Zunächst wird das Helm Repo hinzugefügt :
+Zunächst wird das Helm Repo hinzugefügt, aus dem dann Airflow in Kubernetes installiert wird.
 ```
 helm repo add apache-airflow https://airflow.apache.org
 ```
+
 
 ### Vorbereitung auf dem Kubernetes Cluster 
 
@@ -36,6 +61,8 @@ Der Public Part des SSH Keys muss dann noch an geeigneter Stelle im GIT Server  
 ### Vorbereitungen Helm/Airflow Konfiguration
 
 Die Konfiguration von Airflow geschieht über eine ```values.yml``` Datei, die alle relevanten Umgebungsvariablen für Helm beinhaltet. Die Vorlage für die in diesem Repo enthaltenen values.yml kommt aus dem offiziellen Airflow helmchart Repo. 
+
+In der values.yml wird ein fernet Key angegeben. Dieser dient der Verschlüsselung von Passwörtern etc. Eine Anleitung zum Erstellen des Keys gibts unter https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/fernet.html#security-fernet . Den fernetSecretKeyName habe ich auf fernetsecret gesetzt ( muss komplett lowercase sein ).
 
 ### Handling der Custom Containers 
 
