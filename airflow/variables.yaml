@@ -1,7 +1,11 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  namespace: airflow
-  name: airflow-variables
-data:
-  AIRFLOW_VAR_ETLTOOL_NAME: "pdi"
+{
+  "variables" : [ {
+    "name" : "DB_HOSTNAME",
+    "value" : "localhost",
+    "description" : ""
+  }, {
+    "name" : "DB_PASSWORD",
+    "value" : "abcd",
+    "description" : ""
+  } ]
+}

@@ -123,7 +123,8 @@ Sind Änderungen in der ```values.yml``` erfolgt oder hat sich das custom Image 
 Helm braucht beim ersten Start eine ganze Weile, um die Installation fertigzustellen. Mit 
 ```
 kubectl get po -n airflow 
-``` kann man den aktuellen Status einsehen. Wenn alles funktionsbereit ist, sollte die Ausgabe etwa so aussehen :
+``` 
+kann man den aktuellen Status einsehen. Wenn alles funktionsbereit ist, sollte die Ausgabe etwa so aussehen :
 ```
 NAME                                 READY   STATUS    RESTARTS   AGE
 airflow-postgresql-0                 1/1     Running   0          4m17s

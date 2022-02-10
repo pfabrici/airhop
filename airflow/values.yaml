@@ -456,8 +456,13 @@ workers:
   extraInitContainers: []
 
   # Mount additional volumes into worker.
-  extraVolumes: []
-  extraVolumeMounts: []
+  extraVolumes:
+    - name: airflow-variables
+      configMap:
+        name: airflow-variables
+  extraVolumeMounts:
+    - name: airflow-variables
+      mountPath: /etc/hop
 
   # Select certain nodes for airflow worker pods.
   nodeSelector: {}
