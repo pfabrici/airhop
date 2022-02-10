@@ -60,26 +60,18 @@ Der Public Part des SSH Keys muss dann noch an geeigneter Stelle im GIT Server  
 
 ### Vorbereitungen Helm/Airflow Konfiguration
 
-Die Konfiguration von Airflow geschieht über eine ```values.yml``` Datei, die alle relevanten Umgebungsvariablen für Helm beinhaltet. Die Vorlage für die in diesem Repo enthaltenen values.yml kommt aus dem offiziellen Airflow helmchart Repo. 
+Die Konfiguration von Airflow geschieht über eine ```values.yml``` Datei, die alle relevanten Umgebungsvariablen für Helm beinhaltet. Die Vorlage für die in diesem Repo enthaltenen ```values.yml``` kommt aus dem offiziellen Airflow helmchart Repo und ist an unsere Bedürfnisse angepasst worden.
 
-In der values.yml wird ein fernet Key angegeben. Dieser dient der Verschlüsselung von Passwörtern etc. Eine Anleitung zum Erstellen des Keys gibts unter https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/fernet.html#security-fernet . Den fernetSecretKeyName habe ich auf fernetsecret gesetzt ( muss komplett lowercase sein ).
+In der ```values.yml``` wird ein fernet Key angegeben. Dieser dient der Verschlüsselung von Passwörtern in der Variablenverwaltung von Airflow. Eine Anleitung zum Erstellen des Keys gibt es unter https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/fernet.html#security-fernet . Der fernetSecretKeyName ist auf fernetsecret gesetzt ( muss komplett lowercase sein ).
 
-### Handling der Custom Containers 
+### Handling der Custom Containers für die Airflow Worker
 
-Anstelle des Airflow Images vom docker Hub verwende ich ein selbst erstelltes. Damit soll es möglich sein, weitere Python Bibliotheken und andere ETL Komponenten in das Image zu integrieren und in den DAGs verfügbar zu machen. Die Definition des Custom Containers steckt im ```airflow``` Verzeichnis in Form einer Dockerfile Containerdefinition. Die Dateien 
+Anstelle des Airflow Images vom docker Hub soll ein eigenes Image verwendet werden, welches Apache Hop enthält. Neben der Hop Installation soll weiterhin die Integration von weiteren Python Modulen in das Image über Angabe der Module in einer ```requirements.txt```Datei möglich sein. Die Definition des Custom Containers steckt im ```airflow/docker``` Verzeichnis in Form einer Dockerfile Containerdefinition. Die Dateien 
 * Dockerfile ( Containerdefinition )
 * requirements.txt ( Python Abhängigkeiten )
 * und das Verzeichnis resources
-sind dafür relevant und müssen zunächst entsprechend angepasst werden. Aus dem Dockerfile wird dann mit ```docker build -t airflow-custom:${TAG} .``` ein Image gebaut.
-Dann wir das Image wie folgt in den Minikube Cluster hochgeladen :
-```
-cd airflow
-TAG="1.0.0"
-docker image rm airflow-custom:${TAG}
-docker build -t airflow-custom:${TAG} .
-minikune image rm airflow-custom:${TAG}
-minikube image load airflow-custom:${TAG}
-```
+sind dafür relevant und müssen vorbereitet werden. Im Verzeichnis existiert das Script ```mkimage.sh```, welches die Erzeugung des Images und des Uploads nach minikube übernimmt. 
+
 Wird das Tag oder die Airflow Version verändert, müssen zusätzlich in der values.xml Anpassungen bei den entsprechenden Parametern gemacht werden :
 ```
 defaultAirflowRepository: airflow-custom

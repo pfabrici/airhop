@@ -1,0 +1,16 @@
+{
+  "projectsConfig": {
+    "enabled": true,
+    "projectMandatory": true,
+    "defaultProject": "default",
+    "standardParentProject": "default",
+    "projectConfigurations": [
+      {
+        "projectName": "default",
+        "projectHome": "/opt/airflow/dags/repo/sources/hop",
+        "configFilename": "project-config.json"
+      }
+    ]
+  }
+}
+
