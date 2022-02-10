@@ -103,6 +103,7 @@ cd docker
 mkimage.sh -m
 cd ..
 ```
+Wenn ```mkimage.sh``` ein Verzeichnis ```airflow/docker/resources/hop-custom``` findet, wird dessen gesamter Inhalt 1:1 in das Hop Verzeichnis im Image kopiert. Damit lassen sich z.B. JDBC Treiber oder weitere Plugins ergänzen.
 
 Wird das Tag oder die Airflow Version im Image verändert, müssen zusätzlich in der ```values.xml``` Anpassungen bei den entsprechenden Parametern gemacht werden :
 ```
@@ -153,8 +154,6 @@ Unter ```sources/hop``` sind einige Dateien und Verzeichnisse deswegen zwingend 
 * project-config.json 
 * metadata mit einigen Unterverzeichnissen und den run-configurations
 * die pipeline-log/-probe workflow-log Verzeichnisse müssen angelegt sein, da Hop beim Start eines Jobs abbricht, wenn sie nicht anlegbar sind
-
-
 
 ## Links
 
