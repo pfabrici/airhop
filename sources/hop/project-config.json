@@ -6,11 +6,5 @@
   "parentProjectName": "",
   "config": {
     "variables": []
-  },
-  "lifecycleEnvironments" : [ {
-      "name" : "airflow",
-      "purpose" : "Production",
-      "projectName" : "default",
-      "configurationFiles" : [ "/etc/hop/variables.json" ]
-  } ]
+  }
 }
