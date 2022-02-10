@@ -1,6 +1,7 @@
 {
   "projectsConfig": {
     "enabled": true,
+    "defaultEnvironment" : "airflow",
     "projectMandatory": true,
     "defaultProject": "default",
     "standardParentProject": "default",
@@ -10,7 +11,13 @@
         "projectHome": "/opt/airflow/dags/repo/sources/hop",
         "configFilename": "project-config.json"
       }
-    ]
+    ] ,
+    "lifecycleEnvironments" : [ {
+      "name" : "airflow",
+      "purpose" : "airflow",
+      "projectName" : "default",
+      "configurationFiles" : [ "/etc/hop/variables.json" ]
+    } ]
   }
 }
 
