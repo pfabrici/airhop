@@ -66,20 +66,17 @@ In der ```values.yml``` wird ein fernet Key angegeben. Dieser dient der Verschl�
 
 ### Handling der Custom Containers für die Airflow Worker
 
-Anstelle des Airflow Images vom docker Hub soll ein eigenes Image verwendet werden, welches Apache Hop enthält. Neben der Hop Installation soll weiterhin die Integration von weiteren Python Modulen in das Image über Angabe der Module in einer ```requirements.txt```Datei möglich sein. Die Definition des Custom Containers steckt im ```airflow/docker``` Verzeichnis in Form einer Dockerfile Containerdefinition. Die Dateien 
-* Dockerfile ( Containerdefinition )
-* requirements.txt ( Python Abhängigkeiten )
-* und das Verzeichnis resources
-sind dafür relevant und müssen vorbereitet werden. Im Verzeichnis existiert das Script ```mkimage.sh```, welches die Erzeugung des Images und des Uploads nach minikube übernimmt. 
+Anstelle des Airflow Images vom docker Hub soll ein eigenes Image verwendet werden, welches Apache Hop enthält. Neben der Hop Installation soll weiterhin die Integration von weiteren Python Modulen in das Image über Angabe der Module in einer ```requirements.txt```Datei möglich sein. Die Definition des Custom Containers steckt im ```airflow/docker``` Verzeichnis in Form einer Dockerfile Containerdefinition.
+Mit dem dort verfügbaren Utility ```mkimage.sh``` können einfach neue Versionen des Images erzeugt werden.
 
-Wird das Tag oder die Airflow Version verändert, müssen zusätzlich in der values.xml Anpassungen bei den entsprechenden Parametern gemacht werden :
+Wird das Tag oder die Airflow Version im Image verändert, müssen zusätzlich in der ```values.xml``` Anpassungen bei den entsprechenden Parametern gemacht werden :
 ```
 defaultAirflowRepository: airflow-custom
 defaultAirflowTag: "${TAG}"
 airflowVersion: "2.2.2"
 ```
 
-### Airflow via Helm aktualisieren
+### Airflow via Helm installieren oder aktualisieren
 
 Installiert, Upgedated und ge-/restartet wird dann mit :
 ```
@@ -87,12 +84,27 @@ helm upgrade --install airflow apache-airflow/airflow -n airflow -f values.yaml 
 ```
 
 ## Airflow WebUI
-
+Um die Airflow WebUI zugänglich zu machen muss ein Port-Forward eingerichtet werden :
 ```
 kubectl port-forward svc/airflow-webserver 8080:8080 --namespace airflow
 ```
+Das geht erst, wenn das Helm Chart vollständig installiert ist und läuft. Das kann mit 
+```
+kubectl get po -n airflow
+```
+geprüft werden.
+
 ## Apache Hop in Apache Airflow
-Apache Hop wird mit in den Apache Airflow Container integriert. Das erlaubt eine einfache Ausführung der Hop Pipelines und Workflows aus den DAGs heraus. Dazu werden im Dockerfile die entsprechenden Verzeichnisse angelegt und die Dateien kopiert. Apache Hop bekommt einen eigenen ```hop``` User, der der Gruppe ```apache``` angehört. Dem airflow Benutzer des Containers fügen wir ebenfalls die Gruppe apache hinzu, so das wir über die Gruppe übergreifende Rechte erteilen können.  
+Apache Hop ist nun in den Apache Airflow Container integriert und es können damit DAGs implementiert werden, die Hop Objekte ausführen. DAG Skripte und Hop Sourcen werden zur Laufzeit des PODs über git-sync in den Container geholt. In dem hier beschriebenem Repository finden sich DAG und Hop Sourcen im Verzeichnis ```sources/dag``` bzw. ```sources/hop```. In der ```airflow/values.xml``` wird git-sync so konfiguriert, dass das ```sources``` Verzeichnis aus dem Repo direkt in den Container gesynct wird.
+
+In der Hop Konfiguration innerhalb des Containers ist zudem sichergestellt, dass das notwendige Hop "Default"-Projekt auf das gesyncte ```sources/hop``` verweist. Zu beachten ist, dass die gesyncten Dateien in einem Read-Only Verzeichnis liegen. Dadurch können z.B. keine Metadatenobjekte durch Hop an die Defaultlocations geschrieben werden.
+
+Unter ```sources/hop``` sind einige Dateien und Verzeichnisse deswegen zwingend notwendig:
+* project-config.json 
+* metadata mit einigen Unterverzeichnissen und den run-configurations
+* die pipeline-log/-probe workflow-log Verzeichnisse müssen angelegt sein, da Hop beim Start eines Jobs abbricht, wenn sie nicht anlegbar sind
+
+
 
 ## Links
 
