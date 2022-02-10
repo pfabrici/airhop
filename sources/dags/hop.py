@@ -9,7 +9,7 @@ import subprocess
 
 def run_hop_orig():
     os.chdir("/opt/hop")
-    result=subprocess.getoutput("/opt/hop/hop-run.sh -r local -f generated_rows.hpl")
+    result=subprocess.getoutput("/opt/hop/hop-run.sh -r local -e airflow -f generated_rows.hpl")
     print(result)
 
 def run_hop():
