@@ -66,15 +66,15 @@ in den Kubernetes Server geladen. Der Publickey muss als Deploykey im Folgenden 
 #### Fernet Secret
 Das Fernet Secret kann mit 
 ```
-cd airflow
 python3 -m venv venv
 . venv/bin/activate
 pip3 install cryptography
 python3 fernet.py > fernet.key
+deactivate
 ``` 
 erzeugt und mit 
 ```
-kubectl create secret generic airflow-fernet-secret --from-file=fernetsecret=fernet.key -n airflow
+kubectl create secret generic airflow-fernet-secret --from-file=fernet-key=fernet.key -n airflow
 ```
 im Cluster angelegt werden. Auf das Secret wird in der ```airflow/values.yml``` verwiesen, wenn es im Cluster nicht vorhanden ist starte der Server nicht.
 
@@ -98,6 +98,11 @@ Die Konfiguration von Airflow geschieht über die ```airflow/values.yml``` Datei
 
 Anstelle des Airflow Images vom docker Hub soll ein eigenes Image verwendet werden, welches Apache Hop enthält. Neben der Hop Installation soll weiterhin die Integration von weiteren Python Modulen in das Image über Angabe der Module in einer ```requirements.txt```Datei möglich sein. Die Definition des Custom Containers steckt im ```airflow/docker``` Verzeichnis in Form einer Dockerfile Containerdefinition.
 Mit dem dort verfügbaren Utility ```mkimage.sh``` können einfach neue Versionen des Images erzeugt werden.
+```
+cd docker
+mkimage.sh -m
+cd ..
+```
 
 Wird das Tag oder die Airflow Version im Image verändert, müssen zusätzlich in der ```values.xml``` Anpassungen bei den entsprechenden Parametern gemacht werden :
 ```
@@ -114,16 +119,26 @@ helm upgrade --install airflow apache-airflow/airflow -n airflow -f values.yaml 
 ```
 Sind Änderungen in der ```values.yml``` erfolgt oder hat sich das custom Image verändert kann das gleiche Kommando für ein Upgrade verwendet werden.
 
+Helm braucht beim ersten Start eine ganze Weile, um die Installation fertigzustellen. Mit 
+```
+kubectl get po -n airflow 
+``` kann man den aktuellen Status einsehen. Wenn alles funktionsbereit ist, sollte die Ausgabe etwa so aussehen :
+```
+NAME                                 READY   STATUS    RESTARTS   AGE
+airflow-postgresql-0                 1/1     Running   0          4m17s
+airflow-scheduler-56b8fc88fc-6d84d   3/3     Running   0          4m17s
+airflow-statsd-75f567fd86-st744      1/1     Running   0          4m17s
+airflow-triggerer-69fd8cd56f-p4nb7   1/1     Running   0          4m17s
+airflow-webserver-6c598dd6d6-vx445   1/1     Running   0          4m17s
+```
+
 ## Airflow WebUI
+
 Um die Airflow WebUI zugänglich zu machen muss ein Port-Forward eingerichtet werden :
 ```
 kubectl port-forward svc/airflow-webserver 8080:8080 --namespace airflow
 ```
-Das geht erst, wenn das Helm Chart vollständig installiert ist und läuft. Das kann mit 
-```
-kubectl get po -n airflow
-```
-geprüft werden. Ist der Port-Forward erfolgreich, kann man mit einem Webbrowser auf die Airflow Installation im Kubernetes Cluster über ```http://127.0.0.1:8080``` zugreifen. Username/Passwort lautet  admin/admin.
+Ist der Port-Forward erfolgreich, kann man mit einem Webbrowser auf die Airflow Installation im Kubernetes Cluster über ```http://127.0.0.1:8080``` zugreifen. Username/Passwort lautet  admin/admin.
 
 ## Test der Installation
 Wenn alles funktioniert hat, sollten nun zwei DAGs in Airflow sichtbar sein, hello_world und hop. hello_world führt einen simplen Python Operator aus, der einen String ins Logfile druckt. "hop" startet die Hop Pipeline aus ```sources/hop/generated_rows.hpl```.
