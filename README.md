@@ -149,18 +149,18 @@ kubectl port-forward svc/airflow-webserver 8080:8080 --namespace airflow
 If the port forward is successful, you can access the Airflow installation in the Kubernetes cluster using a web browser via ``http://127.0.0.1:8080``. The username/password is admin/admin.
 
 ## Test of the installation
-If everything worked, two DAGs should now be visible in Airflow, hello_world and hop. hello_world runs a simple Python operator that prints a string to the logfile. "hop" starts the hop pipeline from ```sources/hop/generated_rows.hpl``.
+If everything worked, two DAGs should be visible in Airflow, hello_world and hop. hello_world runs a simple Python operator that prints a string to the logfile. "hop" starts the hop pipeline from ```sources/hop/generated_rows.hpl``.
 During the execution of the DAGs you can use ``kubectl get po -n airflow``` to watch how additional PODs are opened and disappear again.
 
 ## Apache Hop in Apache Airflow
-Apache Hop is now integrated into the Apache Airflow container and can be used to implement DAGs that execute Hop objects. DAG scripts and Hop sources are fetched into the container at runtime of the POD via git-sync. In the repository described here, DAG and hop sources can be found in the ```sources/dag`` and ```sources/hop`` directories, respectively. In the ``airflow/values.xml`` git-sync is configured to sync the ```sources`` directory from the repo directly into the container.
+Apache Hop is now integrated into the Apache Airflow container and can be used to implement DAGs that execute Hop objects. DAG scripts and Hop sources are fetched into the container at runtime of the POD via git-sync. In the repository described here, DAG and hop sources can be found in the ```sources/dag``` and ```sources/hop``` directories, respectively. In the ``airflow/values.xml``` git-sync is configured to sync the ```sources``` directory from the repo directly into the container.
 
 The hop configuration within the container also ensures that the necessary hop "default" project points to the synced ```sources/hop``. It should be noted that the synced files are located in a read-only directory. This prevents e.g. metadata objects from being written to the default locations by Hop.
 
-Under ```sources/hop`` some files and directories are therefore mandatory:
+Under ```sources/hop``` some files and directories are therefore mandatory:
 * project-config.json 
-* metadata mit einigen Unterverzeichnissen und den run-configurations
-* die pipeline-log/-probe workflow-log Verzeichnisse müssen angelegt sein, da Hop beim Start eines Jobs abbricht, wenn sie nicht anlegbar sind
+* metadata with a couple of sub-folders
+* the pipeline-log/-probe workflow-log as Apache Hop does not start when they are not creatable
 
 ## Links
 
