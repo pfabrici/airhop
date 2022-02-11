@@ -1,70 +1,69 @@
-# Apache Airflow und Apache Hop auf Kubernetes mit KubernetesExecutor
+# Apache Airflow and Apache Hop on Kubernetes with KubernetesExecutor
+This repo contains a sample configuration for using Apache Airflow as the scheduler of Apache Hop in a Kubernetes cluster using KubernetesExecutor. That is, a separate POD is started in Kubernetes for the execution of each DAG, which disappears when the process is finished. In the DAGs, a PythonOperator is used to start Apache Hop.
+Both the Airflow DAG scripts and the HOP objects are fetched from git via git-sync when a POD is started. There are no HOP/DAG sources included in the container.
 
-Dieses Repo enthält eine Beispielkonfiguration für die Verwendung von Apache Airflow als Scheduler von Apache Hop in einem Kubernetes Cluster mit Hilfe des KubernetesExecutors. D.h. das für die Ausführung eines jeden DAG ein eigener POD in Kubernetes gestartet wird, der nach Beendigung des Prozesses wieder verschwindet. In den DAGs wird ein PythonOperator verwendet, um Apache Hop zu starten.
-Sowohl die Airflow DAG Scripts als auch die HOP Objekte werden beim Start eines PODs aus git per git-sync abgeholt. Es sind keine HOP/DAG Sourcen im Container enthalten.
+The official Airflow helmet chart is used as the basis for this setup. For the addition of the Airflow Worker container, a hop package is downloaded from the hop website when building the image.
 
-Als Basis für dieses Setup wird das offizielle Airflow Helmchart verwendet. Für die Ergänzung des Airflow Worker Containers wird beim Build des Images ein Hop Package von der Hop Website heruntergeladen.
+## Prerequisits
+This setup was created on an Ubuntu 20.4 system.
 
-## Vorbedingungen
+It is assumed that a Kubernetes cluster is configured and operable from the command line via kubectl. If this is not present, it can be set up quickly with minikube, for example. Docker must be present, as well as the Kubernetes package manager helm. To change DAGs and Hop objects, git and python are required, as well as a local Apache Hop installation.
 Dieses Setup ist auf einem Ubuntu 20.4 System entstanden.
 
-Es wird davon ausgegangen, dass ein Kubernetes Cluster konfiguriert und von der Kommandozeile per kubectl bedienbar ist. Wenn dieser nicht vorhanden ist, kann er z.B. mit minikube schnell aufgesetzt werden. Docker muss vorhanden sein, ebenso der Kubernetes Paketmanager helm. Um DAGs und Hop Objekte zu ändern ist git und python sowie eine lokale Apache Hop Installation nötig.
-
-* Installation von Docker : https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
+* Installation of Docker : https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
 * Minikube : https://kubernetes.io/de/docs/tasks/tools/install-minikube/
-* Installation von Helm : https://helm.sh/docs/intro/install/
-* Installation von git, python : Paketmanager ```sudo apt-get install git python3```
+* Installation of Helm : https://helm.sh/docs/intro/install/
+* Installation of git, python : Paketmanager ```sudo apt-get install git python3```
 
-Der für dieses Setup verwendete Linux Benutzer muss in der docker gruppe enthalten sein, sonst benötigt man hier und da ein sudo mehr :
+The Linux user used for this setup must be included in the docker group, otherwise you need a sudo here and there more
 ```
 sudo usermod -a -G docker <user>
 ```
-
-Anschliessend wird das hier beschriebene Repository kub4us gecloned :
+Subsequently, the repository kub4us described here is cloned :
 ```
 git clone git@sources.zeith.net:peter.fabricius/kub4us.git
 ```
-Das Repository verfügt über zwei Unterverzeichniss : 
-* airflow enthält alle Scripte/Konfigurationen, die zur Installation der Software im Cluster notwendig sind
-* sources enthält beispielhafte DAGs und Hop Sourcen, die später in den Worker gesynct werden
+The repository has two subdirectories :
+* airflow contains all scripts/configurations necessary to install the software in the cluster.
+* sources contains sample DAGs and hop sources that will later be synced into the worker.
 
-Die weiteren Schritte finden im Verzeichnis ```airflow``` statt:
+The following steps take place in the ``airflow`` directory:
 ```
 cd kub4us/airflow
 ```
 
-## Konfiguration und Installation von Airflow in Kubernetes
-### Helm vorbereiten
-Zunächst wird das Helm Repo hinzugefügt, aus dem dann Airflow in Kubernetes installiert wird.
+## Configuration and installation of Airflow in Kubernetes
+### Prepare Helm 
+First, the Helm repo is added, from which Airflow is then installed into Kubernetes.
 ```
 helm repo add apache-airflow https://airflow.apache.org
 ```
 
 
-### Vorbereitung auf dem Kubernetes Cluster 
-
-Die Airflow Installation soll in einem eigenen Namespace installiert werden. Wenn noch nicht vorhanden, kann er mit 
+### Preparations on the Kubernetes Cluster
+The Airflow installation should be installed in its own namespace. If it does not already exist, it can be created with
 ```
 kubectl create namespace airflow
 ```
-angelegt werden. In dem Namespace werden vor Aufruf des Helm-Charts zwei weitere Elemente vorbereitet: 
-* das ssh Secret, welches den Deploykey für die Synchronisierung der DAGs/Hop Sourcen aus einem git Repo enthält
-* ein Fernet Secret, welches für die Verschlüsselung von Variablen in Airflow benötigt wird
-* eine Config Map für die Ablage von Variablen für die DAG Ausführung.
+must be created. Two additional elements are prepared in the namespace before calling the Helm chart:
+* the ssh secret, which contains the deploykey for synchronizing DAGs/Hop sources from a git repo.
+* a fernet secret, which is needed for encrypting variables in Airflow
+* a config map for storing variables for DAG execution.
 
 ### SSH Secret
-Ein ssh Key wird schnell mit  
+A ssh key pair can easily be created with 
 ```
 ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 ```
-erzeugt. Als Namen für die Schlüsseldateien verwenden wir airflow_dags_rsa, da diese Namen bereits in der ```airflow/values.yml``` im git-sync Abschnitt verwendet werden. Der Key wird dann mit 
+We use ```airflow_dags_rsa``` as the names for the key files, since these names are already used in the ``airflow/values.yml`` in the git-sync section. The secret gets uploaded into Kubernetes by 
+
 ```
 kubectl create secret generic airflow-ssh-git-secret --from-file=gitSshKey=airflow_dags_rsa -n airflow
 ```
-in den Kubernetes Server geladen. Der Publickey muss als Deploykey im Folgenden noch an geeigneter Stelle im git Server abgelegt werden.
+The Publickey must then be stored as deploykey in the git repository where the DAG/Hop sources are stored.
 
 #### Fernet Secret
-Das Fernet Secret kann mit 
+Airflow uses a fernet key to crypt variables in its own variable store. We have to create an installation specific key.  The fernet key can be generated with a simple python script. Create a python virtual environment to install the cryptography module locally before you run the generation script :
 ```
 python3 -m venv venv
 . venv/bin/activate
@@ -72,59 +71,58 @@ pip3 install cryptography
 python3 fernet.py > fernet.key
 deactivate
 ``` 
-erzeugt und mit 
+Upload the resulting key file to  Kubernetes by running
 ```
 kubectl create secret generic airflow-fernet-secret --from-file=fernet-key=fernet.key -n airflow
 ```
-im Cluster angelegt werden. Auf das Secret wird in der ```airflow/values.yml``` verwiesen, wenn es im Cluster nicht vorhanden ist starte der Server nicht.
+The secret will be referenced in ```airflow/values.yml```. When the secret is not available in the Kubernetes namespace Airflow will not come up.
 
 ### Configmap
-Die Configmap basiert auf der Datei ```airflow/variables.yaml``` dieses Repos und wird mit
+We use a Kubernetes ConfigMap to pass an Apache Hop variable environment into the Airflow Worker nodes. An example ConfigMap with some basic variables are prepared in ```airflow/variables.yaml``` of this repository. All variables declared in the ConfigMap will later be available in the HOP pipelines and workflows. You can upload the ConfigMap to K8S by running 
 ```
 kubectl create configmap airflow-variables -n airflow --from-file variables.yaml
 ```
-angelegt. 
 
-
-### Vorbereitungen Helm/Airflow Konfiguration
-
-Die Konfiguration von Airflow geschieht über die ```airflow/values.yml``` Datei, die alle relevanten Steuerungsvariablen für den Helm-Chart beinhaltet. Die Vorlage für die in diesem Repo enthaltenen ```airflow/values.yml``` kommt aus dem offiziellen Airflow helmchart Repo und ist hier entsprechend angepasst worden :
-* Einrichtung git-sync
-* fernet-key
-* custom Airflow Image
+### Preparation of the Helm/Airflow configuration
+The configuration of Airflow is done in the ``airflow/values.yml`` file, which contains all relevant control variables for the helm chart. The template for the ``airflow/values.yml`` included in this repo comes from the official airflow helmchart repo and has been adapted here accordingly. It now contains specific
+* git-sync setup incl. git ssh key
+* a reference to the fernet secret
+* configuration of the custom worker image
+* configuration of a volume that mounts the ConfigMap into the worker
 * ...
 
-### Handling der Custom Containers für die Airflow Worker
+### Managing the custom worker image including the Apache Hop installation
+Instead of the Airflow image from docker Hub, a separate image is to be used that contains Apache Hop. In addition to the Hop installation, it should also be possible to integrate other Python modules into the image by specifying the modules in a ``requirements.txt`` file. The definition of the custom container is located in the ``airflow/docker`` directory in the form of a Dockerfile container definition.
+The ``mkimage.sh`` utility available there can be used to easily create new versions of the image.
 
-Anstelle des Airflow Images vom docker Hub soll ein eigenes Image verwendet werden, welches Apache Hop enthält. Neben der Hop Installation soll weiterhin die Integration von weiteren Python Modulen in das Image über Angabe der Module in einer ```requirements.txt```Datei möglich sein. Die Definition des Custom Containers steckt im ```airflow/docker``` Verzeichnis in Form einer Dockerfile Containerdefinition.
-Mit dem dort verfügbaren Utility ```mkimage.sh``` können einfach neue Versionen des Images erzeugt werden.
 ```
 cd docker
 mkimage.sh -m
 cd ..
 ```
-Wenn ```mkimage.sh``` ein Verzeichnis ```airflow/docker/resources/hop-custom``` findet, wird dessen gesamter Inhalt 1:1 in das Hop Verzeichnis im Image kopiert. Damit lassen sich z.B. JDBC Treiber oder weitere Plugins ergänzen.
+If ``mkimage.sh`` finds a directory ```airflow/docker/resources/hop-custom``, its entire contents will be copied 1:1 to the hop directory in the image. This can be used to add e.g. JDBC drivers or additional plugins.
 
-Wird das Tag oder die Airflow Version im Image verändert, müssen zusätzlich in der ```values.xml``` Anpassungen bei den entsprechenden Parametern gemacht werden :
+If the tag or the airflow version is changed in the image, additional adjustments must be made to the corresponding parameters in the ``values.xml``:
+
 ```
 defaultAirflowRepository: airflow-custom
 defaultAirflowTag: "${TAG}"
 airflowVersion: "2.2.2"
 ```
 
-### Airflow via Helm installieren oder aktualisieren
+### Install Airflow !
 
-Letztendlich muss Airflow im Kubernetes Clusterr installiert werden. Das geht mit folgendem Kommando :
+Finally, Airflow needs to be installed in the Kubernetes clusterr. This can be done with the following command :
+
 ```
 helm upgrade --install airflow apache-airflow/airflow -n airflow -f values.yaml --debug
 ```
-Sind Änderungen in der ```values.yml``` erfolgt oder hat sich das custom Image verändert kann das gleiche Kommando für ein Upgrade verwendet werden.
-
-Helm braucht beim ersten Start eine ganze Weile, um die Installation fertigzustellen. Mit 
+If changes have been made to the ``values.yml`` or the custom image has changed, the same command can be used for an upgrade.
+Helm takes quite a while to complete the installation when first launched. With
 ```
 kubectl get po -n airflow 
 ``` 
-kann man den aktuellen Status einsehen. Wenn alles funktionsbereit ist, sollte die Ausgabe etwa so aussehen :
+you can see the current status. When everything is functional, the output should look something like this :
 ```
 NAME                                 READY   STATUS    RESTARTS   AGE
 airflow-postgresql-0                 1/1     Running   0          4m17s
@@ -135,23 +133,22 @@ airflow-webserver-6c598dd6d6-vx445   1/1     Running   0          4m17s
 ```
 
 ## Airflow WebUI
-
-Um die Airflow WebUI zugänglich zu machen muss ein Port-Forward eingerichtet werden :
+To make the Airflow WebUI accessible a port-forward must be set up :
 ```
 kubectl port-forward svc/airflow-webserver 8080:8080 --namespace airflow
 ```
-Ist der Port-Forward erfolgreich, kann man mit einem Webbrowser auf die Airflow Installation im Kubernetes Cluster über ```http://127.0.0.1:8080``` zugreifen. Username/Passwort lautet  admin/admin.
+If the port forward is successful, you can access the Airflow installation in the Kubernetes cluster using a web browser via ``http://127.0.0.1:8080``. The username/password is admin/admin.
 
-## Test der Installation
-Wenn alles funktioniert hat, sollten nun zwei DAGs in Airflow sichtbar sein, hello_world und hop. hello_world führt einen simplen Python Operator aus, der einen String ins Logfile druckt. "hop" startet die Hop Pipeline aus ```sources/hop/generated_rows.hpl```.
-Während der Ausführung der DAGs kann man per ```kubectl get po -n airflow``` beobachten, wie zusötzliche PODs aufgemacht werden und wieder verschwinden.
+## Test of the installation
+If everything worked, two DAGs should now be visible in Airflow, hello_world and hop. hello_world runs a simple Python operator that prints a string to the logfile. "hop" starts the hop pipeline from ```sources/hop/generated_rows.hpl``.
+During the execution of the DAGs you can use ``kubectl get po -n airflow``` to watch how additional PODs are opened and disappear again.
 
 ## Apache Hop in Apache Airflow
-Apache Hop ist nun in den Apache Airflow Container integriert und es können damit DAGs implementiert werden, die Hop Objekte ausführen. DAG Skripte und Hop Sourcen werden zur Laufzeit des PODs über git-sync in den Container geholt. In dem hier beschriebenem Repository finden sich DAG und Hop Sourcen im Verzeichnis ```sources/dag``` bzw. ```sources/hop```. In der ```airflow/values.xml``` wird git-sync so konfiguriert, dass das ```sources``` Verzeichnis aus dem Repo direkt in den Container gesynct wird.
+Apache Hop is now integrated into the Apache Airflow container and can be used to implement DAGs that execute Hop objects. DAG scripts and Hop sources are fetched into the container at runtime of the POD via git-sync. In the repository described here, DAG and hop sources can be found in the ```sources/dag`` and ```sources/hop`` directories, respectively. In the ``airflow/values.xml`` git-sync is configured to sync the ```sources`` directory from the repo directly into the container.
 
-In der Hop Konfiguration innerhalb des Containers ist zudem sichergestellt, dass das notwendige Hop "Default"-Projekt auf das gesyncte ```sources/hop``` verweist. Zu beachten ist, dass die gesyncten Dateien in einem Read-Only Verzeichnis liegen. Dadurch können z.B. keine Metadatenobjekte durch Hop an die Defaultlocations geschrieben werden.
+The hop configuration within the container also ensures that the necessary hop "default" project points to the synced ```sources/hop``. It should be noted that the synced files are located in a read-only directory. This prevents e.g. metadata objects from being written to the default locations by Hop.
 
-Unter ```sources/hop``` sind einige Dateien und Verzeichnisse deswegen zwingend notwendig:
+Under ```sources/hop`` some files and directories are therefore mandatory:
 * project-config.json 
 * metadata mit einigen Unterverzeichnissen und den run-configurations
 * die pipeline-log/-probe workflow-log Verzeichnisse müssen angelegt sein, da Hop beim Start eines Jobs abbricht, wenn sie nicht anlegbar sind

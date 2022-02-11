@@ -16,7 +16,7 @@
       "name" : "airflow",
       "purpose" : "airflow",
       "projectName" : "default",
-      "configurationFiles" : [ "/etc/hop/variables.json" ]
+      "configurationFiles" : [ "/etc/hop/variables.yaml" ]
     } ]
   }
 }
