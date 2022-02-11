@@ -119,9 +119,9 @@ defaultAirflowTag: "${TAG}"
 airflowVersion: "2.2.2"
 ```
 
-### Install Airflow !
+### Install Airflow and Hop !
 
-Finally, Airflow needs to be installed in the Kubernetes clusterr. This can be done with the following command :
+Finally, Airflow with Apache Hop enabled worker needs to be installed in the Kubernetes cluster. This can be done with the following command :
 
 ```
 helm upgrade --install airflow apache-airflow/airflow -n airflow -f values.yaml --debug
@@ -164,6 +164,8 @@ Under ```sources/hop``` some files and directories are therefore mandatory:
 
 ## Links
 
+* https://airflow.apache.org
+* https://hop.apache.org
 * https://k8s-docs.netlify.app/en/docs/tasks/tools/install-minikube/
 * https://airflow.apache.org/docs/helm-chart/stable/index.html
 * https://airflow.apache.org/docs/helm-chart/stable/manage-dags-files.html
