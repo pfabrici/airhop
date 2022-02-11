@@ -1,8 +1,8 @@
 # Apache Airflow and Apache Hop on Kubernetes with KubernetesExecutor
 
-Many Data Engineers recognize Apache Airflow as an ELT or data integration tool, but on its website it is declared as "... a platform created by the community to programmatically author, schedule and monitor workflows." Apache Hop is eventually a good extension to Airflow if you do not want to implement your ELT/ETL pipelines in a scripting language but with a graphical rapid development environment.
+Many Data Engineers recognize Apache Airflow as an ELT or data integration tool, but on its website it is declared as "... a platform created by the community to programmatically author, schedule and monitor workflows." Apache Hop is eventually a good extension to Airflow if you do not want to implement your ELT/ETL pipelines in a scripting language but instead with a graphical rapid development environment.
 
-This repo contains a sample configuration for using Apache Airflow as the scheduler of Apache Hop in a Kubernetes cluster using KubernetesExecutor. That means a separate POD is started in Kubernetes for each execution of a DAG. The PODs are shutdown when the process is finished, so the solution does not use many resources on the cluster. In the DAGs, a PythonOperator in combination with Pythons "subProcess" is used to start Apache Hop processes. With the subprocess approach it is possible to see Apache Hop logs immediatly and in full length.
+This repo contains a sample configuration for using Apache Airflow as the scheduler of Apache Hop in a Kubernetes cluster using KubernetesExecutor. That means a separate POD is started in Kubernetes for each execution of a DAG. The PODs are shut down when the process is finished, so the solution does not use many resources on the cluster. In the DAGs a PythonOperator in combination with Pythons "subprocess" is used to start Apache Hop processes. With the subprocess approach it is possible to see Apache Hop logs immediatly and in full length.
 Both, the Airflow DAG scripts and the HOP objects are fetched by the Airflow worker POD from git via git-sync when a POD is getting started. There are no HOP/DAG sources included in the container, which makes the solution re-usable for different projects.
 The official Airflow helm chart is used as the basis for this setup. For the addition of the Airflow Worker container, a hop package is downloaded from the hop website when building the image.
 
@@ -10,6 +10,8 @@ The official Airflow helm chart is used as the basis for this setup. For the add
 This setup was created on an Ubuntu 20.4 system.
 
 It is assumed that a Kubernetes cluster is configured and operable from the command line via kubectl. If this is not present, it can be set up quickly with minikube, for example. The docker cli needs to be present, as well as the Kubernetes package manager helm. To change DAGs and Hop objects, git and python are required, as well as a local Apache Hop installation.
+
+Some links :
 
 * Installation of Docker : https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
 * Minikube : https://kubernetes.io/de/docs/tasks/tools/install-minikube/
@@ -36,20 +38,20 @@ cd airhop/airflow
 
 ## Configuration and installation of Airflow in Kubernetes
 ### Prepare Helm 
-First, the Helm repo is added, from which Apache Airflow is then installed into Kubernetes.
+First, the Helm repo is added from which Apache Airflow will later be installed into Kubernetes.
 ```
 helm repo add apache-airflow https://airflow.apache.org
 ```
 
 ### Preparations on the Kubernetes Cluster
-The Apche Airflow installation should be installed in its own namespace. If it does not already exist, it can be created with
+The Apache Airflow installation should be installed in its own namespace. If it does not already exist, it can be created with
 ```
 kubectl create namespace airflow
 ```
 Three additional elements are prepared in the namespace before calling the Helm chart:
-* the ssh secret, which contains the deploykey for synchronizing DAGs/Hop sources from a git repo.
+* the ssh secret, which contains the deploykey for synchronizing DAGs/Hop sources from a git repo
 * a fernet secret, which is needed for encrypting variables in Airflow
-* a config map for storing variables for DAG execution.
+* a config map for storing a HOP environment
 
 ### SSH Secret
 A ssh key pair can easily be created with 
@@ -61,10 +63,10 @@ We use ```airflow_dags_rsa``` as the names for the key files, since these names 
 ```
 kubectl create secret generic airflow-ssh-git-secret --from-file=gitSshKey=airflow_dags_rsa -n airflow
 ```
-The Publickey must then be stored as deploykey in the git repository where the DAG/Hop sources are stored.
+The publickey must then be stored as the counterpart deploykey in the git repository where the DAG/Hop sources are stored.
 
 #### Fernet Secret
-Airflow uses a fernet key to crypt variables in its own variable store. We have to create an installation specific key.  The fernet key can be generated with a simple python script. Create a python virtual environment to install the cryptography module locally before you run the generation script :
+Airflow uses a fernet key to crypt variables in its own variable store. We have to create an installation specific key.  The fernet key can be generated with a simple python script. Create a python virtual environment to install the cryptography module locally before you run this generation script :
 ```
 python3 -m venv venv
 . venv/bin/activate
@@ -79,7 +81,7 @@ kubectl create secret generic airflow-fernet-secret --from-file=fernet-key=ferne
 The secret will be referenced in ```airflow/values.yml```. When the secret is not available in the Kubernetes namespace Airflow will not come up.
 
 ### Configmap
-We use a Kubernetes ConfigMap to pass an Apache Hop variable environment into the Airflow Worker nodes. An example ConfigMap with some basic variables are prepared in ```airflow/variables.yaml``` of this repository. All variables declared in the ConfigMap will later be available in the HOP pipelines and workflows. You can upload the ConfigMap to K8S by running 
+We use a Kubernetes ConfigMap to pass an Apache Hop environment ( https://hop.apache.org/manual/latest/projects/projects-environments.html ) into the Airflow Worker nodes. An example ConfigMap with some basic variables is prepared in ```airflow/variables.yaml``` of this repository. All variables declared in the ConfigMap will later be available in the HOP pipelines and workflows synced to the worker. You can upload the ConfigMap to K8S by running 
 ```
 kubectl create configmap airflow-variables -n airflow --from-file variables.yaml
 ```
