@@ -153,9 +153,9 @@ If everything worked, two DAGs should be visible in Airflow, hello_world and hop
 During the execution of the DAGs you can use ``kubectl get po -n airflow``` to watch how additional PODs are opened and disappear again.
 
 ## Apache Hop in Apache Airflow
-Apache Hop is now integrated into the Apache Airflow container and can be used to implement DAGs that execute Hop objects. DAG scripts and Hop sources are fetched into the container at runtime of the POD via git-sync. In the repository described here, DAG and hop sources can be found in the ```sources/dag``` and ```sources/hop``` directories, respectively. In the ``airflow/values.xml``` git-sync is configured to sync the ```sources``` directory from the repo directly into the container.
+Apache Hop is now integrated into the Apache Airflow container and can be used to implement DAGs that execute Hop objects. DAG scripts and Hop sources are fetched into the container at runtime of the POD via git-sync. In the repository described here, DAG and hop sources can be found in the ```sources/dag``` and ```sources/hop``` directories, respectively. In the ```airflow/values.xml``` git-sync is configured to sync the ```sources``` directory from the repo directly into the container.
 
-The hop configuration within the container also ensures that the necessary hop "default" project points to the synced ```sources/hop``. It should be noted that the synced files are located in a read-only directory. This prevents e.g. metadata objects from being written to the default locations by Hop.
+The hop configuration within the container also ensures that the necessary hop "default" project points to the synced ```sources/hop```. It should be noted that the synced files are located in a read-only directory. This prevents e.g. metadata objects from being written to the default locations by Hop.
 
 Under ```sources/hop``` some files and directories are therefore mandatory:
 * project-config.json 
