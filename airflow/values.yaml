@@ -1344,7 +1344,7 @@ dags:
     # ssh examples ssh://git@github.com/apache/airflow.git
     # git@github.com:apache/airflow.git
     # https example: https://github.com/apache/airflow.git
-    repo: ssh://git@192.168.115.16:22/peter.fabricius/kub4us.git
+    repo: ssh://git@github.com:pfabrici/airhop.git
     branch: master
     rev: HEAD
     depth: 1

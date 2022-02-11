@@ -1,27 +1,29 @@
 # Apache Airflow and Apache Hop on Kubernetes with KubernetesExecutor
-This repo contains a sample configuration for using Apache Airflow as the scheduler of Apache Hop in a Kubernetes cluster using KubernetesExecutor. That is, a separate POD is started in Kubernetes for the execution of each DAG, which disappears when the process is finished. In the DAGs, a PythonOperator is used to start Apache Hop.
-Both the Airflow DAG scripts and the HOP objects are fetched from git via git-sync when a POD is started. There are no HOP/DAG sources included in the container.
 
-The official Airflow helmet chart is used as the basis for this setup. For the addition of the Airflow Worker container, a hop package is downloaded from the hop website when building the image.
+Many Data Engineers recognize Apache Airflow as an ELT or data integration tool, but on its website it is declared as "... a platform created by the community to programmatically author, schedule and monitor workflows." Apache Hop is eventually a good extension to Airflow if you do not want to implement your ELT/ETL pipelines in a scripting language but with a graphical rapid development environment.
+
+This repo contains a sample configuration for using Apache Airflow as the scheduler of Apache Hop in a Kubernetes cluster using KubernetesExecutor. That means a separate POD is started in Kubernetes for each execution of a DAG. The PODs are shutdown when the process is finished, so the solution does not use many resources on the cluster. In the DAGs, a PythonOperator in combination with Pythons "subProcess" is used to start Apache Hop processes. With the subprocess approach it is possible to see Apache Hop logs immediatly and in full length.
+Both, the Airflow DAG scripts and the HOP objects are fetched by the Airflow worker POD from git via git-sync when a POD is getting started. There are no HOP/DAG sources included in the container, which makes the solution re-usable for different projects.
+The official Airflow helm chart is used as the basis for this setup. For the addition of the Airflow Worker container, a hop package is downloaded from the hop website when building the image.
 
 ## Prerequisits
 This setup was created on an Ubuntu 20.4 system.
 
-It is assumed that a Kubernetes cluster is configured and operable from the command line via kubectl. If this is not present, it can be set up quickly with minikube, for example. Docker must be present, as well as the Kubernetes package manager helm. To change DAGs and Hop objects, git and python are required, as well as a local Apache Hop installation.
-Dieses Setup ist auf einem Ubuntu 20.4 System entstanden.
+It is assumed that a Kubernetes cluster is configured and operable from the command line via kubectl. If this is not present, it can be set up quickly with minikube, for example. The docker cli needs to be present, as well as the Kubernetes package manager helm. To change DAGs and Hop objects, git and python are required, as well as a local Apache Hop installation.
 
 * Installation of Docker : https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-20-04
 * Minikube : https://kubernetes.io/de/docs/tasks/tools/install-minikube/
 * Installation of Helm : https://helm.sh/docs/intro/install/
-* Installation of git, python : Paketmanager ```sudo apt-get install git python3```
+* Installation of git, python : use the OS package manager, e.g. ```sudo apt-get install git python3```
 
-The Linux user used for this setup must be included in the docker group, otherwise you need a sudo here and there more
+The Linux user used for this setup should be included in the docker group to ease further steps
 ```
 sudo usermod -a -G docker <user>
 ```
-Subsequently, the repository kub4us described here is cloned :
+
+As you need a git repository with your own deploy key to run the git-sync mechanism later on it is necessary to clone this repository within git to a user you can administer. After forking you can clone your repository to a place on your computer :
 ```
-git clone git@sources.zeith.net:peter.fabricius/kub4us.git
+git clone git@sources.zeith.net:peter.fabricius/airhop.git
 ```
 The repository has two subdirectories :
 * airflow contains all scripts/configurations necessary to install the software in the cluster.
@@ -29,23 +31,22 @@ The repository has two subdirectories :
 
 The following steps take place in the ``airflow`` directory:
 ```
-cd kub4us/airflow
+cd airhop/airflow
 ```
 
 ## Configuration and installation of Airflow in Kubernetes
 ### Prepare Helm 
-First, the Helm repo is added, from which Airflow is then installed into Kubernetes.
+First, the Helm repo is added, from which Apache Airflow is then installed into Kubernetes.
 ```
 helm repo add apache-airflow https://airflow.apache.org
 ```
 
-
 ### Preparations on the Kubernetes Cluster
-The Airflow installation should be installed in its own namespace. If it does not already exist, it can be created with
+The Apche Airflow installation should be installed in its own namespace. If it does not already exist, it can be created with
 ```
 kubectl create namespace airflow
 ```
-must be created. Two additional elements are prepared in the namespace before calling the Helm chart:
+Three additional elements are prepared in the namespace before calling the Helm chart:
 * the ssh secret, which contains the deploykey for synchronizing DAGs/Hop sources from a git repo.
 * a fernet secret, which is needed for encrypting variables in Airflow
 * a config map for storing variables for DAG execution.
@@ -85,11 +86,19 @@ kubectl create configmap airflow-variables -n airflow --from-file variables.yaml
 
 ### Preparation of the Helm/Airflow configuration
 The configuration of Airflow is done in the ``airflow/values.yml`` file, which contains all relevant control variables for the helm chart. The template for the ``airflow/values.yml`` included in this repo comes from the official airflow helmchart repo and has been adapted here accordingly. It now contains specific
-* git-sync setup incl. git ssh key
 * a reference to the fernet secret
 * configuration of the custom worker image
 * configuration of a volume that mounts the ConfigMap into the worker
-* ...
+* git-sync setup incl. git ssh key
+
+To make git-sync work with your own repository where you set your own deploy key you have to exchange the repo line in ```airflow/values.yml``` accordingly :
+
+```
+ gitSync:
+    enabled: true
+    repo: ssh://git@github.com:pfabrici/airhop.git
+```
+
 
 ### Managing the custom worker image including the Apache Hop installation
 Instead of the Airflow image from docker Hub, a separate image is to be used that contains Apache Hop. In addition to the Hop installation, it should also be possible to integrate other Python modules into the image by specifying the modules in a ``requirements.txt`` file. The definition of the custom container is located in the ``airflow/docker`` directory in the form of a Dockerfile container definition.
